@@ -1,0 +1,275 @@
+{
+  "info": {
+    "name": "ReliefDesk API (HACK-P437)",
+    "description": "REST API for the ReliefDesk Disaster Assistance Request System.\n\nSetup: set the collection variables baseUrl (your Render URL, no trailing slash), username and password. Run requests in order: Create request, Track request, Login, List requests, Update request.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "https://reliefdesk.onrender.com"
+    },
+    {
+      "key": "username",
+      "value": "admin"
+    },
+    {
+      "key": "password",
+      "value": "Haree@25"
+    },
+    {
+      "key": "token",
+      "value": ""
+    },
+    {
+      "key": "trackingId",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "1. Create help request (public)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/requests",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "requests"
+          ]
+        },
+        "description": "Public. Creates a request and returns its tracking ID (saved to {{trackingId}}).",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"Test Person\",\n  \"phone\": \"9876543210\",\n  \"type\": \"Rescue\",\n  \"urgency\": \"Critical\",\n  \"people\": 5,\n  \"vuln\": [\n    \"Elderly\",\n    \"Children\"\n  ],\n  \"location\": \"Near Main Bridge, Ward 5\",\n  \"description\": \"Water level rising, family on first floor.\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status is 201', () => pm.response.to.have.status(201));",
+              "const id = pm.response.json().id;",
+              "pm.test('Returns tracking ID', () => pm.expect(id).to.match(/^RD-\\d{4}$/));",
+              "pm.collectionVariables.set('trackingId', id);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Track request (public)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/track/{{trackingId}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "track",
+            "{{trackingId}}"
+          ]
+        },
+        "description": "Public. Returns status, team, priority and location only."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+              "pm.test('No phone or name exposed', () => { const j = pm.response.json(); pm.expect(j).to.not.have.property('phone'); pm.expect(j).to.not.have.property('name'); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Login (responder)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/login",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "login"
+          ]
+        },
+        "description": "Returns a JWT (valid 8 hours), saved automatically to {{token}}.",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"username\": \"{{username}}\",\n  \"password\": \"{{password}}\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+              "pm.collectionVariables.set('token', pm.response.json().token);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "4. List all requests (auth)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/requests",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "requests"
+          ]
+        },
+        "description": "Responder only. Requests sorted by priority score, highest first.",
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token}}",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+              "pm.test('Returns an array', () => pm.expect(pm.response.json()).to.be.an('array'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "5. Update request (auth)",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/requests/{{trackingId}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "requests",
+            "{{trackingId}}"
+          ]
+        },
+        "description": "Responder only. Update status and/or team. Statuses: New, Assigned, In progress, Resolved.",
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"team\": \"Rescue Team A\",\n  \"status\": \"In progress\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status is 200', () => pm.response.to.have.status(200));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "6. List requests without token (should fail)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/requests",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "requests"
+          ]
+        },
+        "description": "Negative test: shows the endpoint is protected."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Rejected with 401', () => pm.response.to.have.status(401));"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}
