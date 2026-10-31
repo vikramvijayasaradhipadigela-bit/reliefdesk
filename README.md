@@ -2,6 +2,19 @@
 
 A web app where people affected by a disaster can request help, and responders can triage and dispatch it.
 
+## Live Demo
+- **Live app:** https://reliefdesk.onrender.com
+- **Demo video:** https://drive.google.com/file/d/1DQ-5isYr6FYZwUJA5BwiLnlwuNk4Y7xx/view?usp=sharing
+- **Responder login:** provided in the submission form
+  (the first request may take up to a minute, because the free server sleeps when idle)
+
+## Problem Statement
+HACK-P437: Disaster Assistance Request System. During disasters, people struggle to reach help, and responders
+have no single prioritised view of who needs what.
+
+## Screenshots
+
+
 ## Features
 - **Citizen request form:** need type, urgency, group size, vulnerable people, location (with GPS), details
 - **Tracking:** each request gets an ID (e.g. `RD-4821`) with a live status timeline
